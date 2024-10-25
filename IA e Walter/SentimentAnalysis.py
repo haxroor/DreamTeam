@@ -16,12 +16,20 @@ stopwords = {"un", "uno", "una", "il", "lo", "la", "i", "gli", "le", "e", "ma", 
              "per", "tra", "fra", "è", "sono", "era", "avere", "ho", "fare", "do","che"}
 negazioni = {"non", "niente", "poco", "meno", "nulla"}
 
-# Definire limiti per evitare che i punteggi diventino troppo alti o bassi
-MIN_PTS = 0.0  # 0,15 68%
-MAX_PTS = 15.0  # 0.1,15 61%
-
-# Definire una soglia per considerare sentiment neutro
+# DEFINIZIONE DI TUTTE LE VARIABILI DA AGGIUSTARE
+MIN_PTS = 0.0
+MAX_PTS = 15.0
+ATTEMPTS = 50
+CORREZZIONE_TRAINING = 0.1
 NEUTRAL_THRESHOLD = 3.0
+POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 0.6
+NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 0.2
+POSPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 0.2
+NEGPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 0.6
+POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 0.4
+NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 0.4
+MOLTIPLICATORE_ESCLAMAZIONI = 2
+
 
 # creazione sample
 df = df_full.sample(frac=0.9, random_state=42)
@@ -38,7 +46,7 @@ for i, row in df.iterrows():
     tentativi = 0
 
     while not fatto:
-        if tentativi > 50:
+        if tentativi > ATTEMPTS:
             #print(tweet,", got", score, ", expected", row[-1])
             #if row[-1] != "neutral":
                 #print(f"pos = {pos_score}, neg = {neg_score}, expected {row[-1]}")
@@ -47,7 +55,7 @@ for i, row in df.iterrows():
         pos_score = 0
         neg_score = 0
         nextisnegazione = False
-        escl = 2 if '!' in tweet else 1
+        escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
 
         for parola in tweet.lower().split():
             if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
@@ -57,10 +65,17 @@ for i, row in df.iterrows():
                 nextisnegazione = True
                 continue
 
-            # Se la parola è nuova, aggiungila a nuoveparole
+            # Se la parola è nuova, aggiungila
             if parola not in pospts.keys() and parola not in negpts.keys():
-                pospts[parola] = 0.5  # 0,5 0,15 68%
-                negpts[parola] = 0.5
+                if row[-1] == "positive":
+                    pospts[parola] = POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO
+                    negpts[parola] = NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO
+                elif row[-1] == "negative":
+                    pospts[parola] = POSPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO
+                    negpts[parola] = NEGPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO
+                else:
+                    pospts[parola] = POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO
+                    negpts[parola] = NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO
 
             # Gestione del punteggio per le parole già note
             if nextisnegazione:
@@ -105,12 +120,12 @@ for i, row in df.iterrows():
                 if parola not in stopwords and parola not in negazioni and parola[0] != '@' and parola[0] != '#' and parola[:4] != 'http':
                     if risultato < obiettivo:
                         # Tuning al rialzo
-                        pospts[parola] = min(pospts[parola] + 0.1, MAX_PTS)
-                        negpts[parola] = max(negpts[parola] - 0.1, MIN_PTS)
+                        pospts[parola] = min(pospts[parola] + CORREZZIONE_TRAINING, MAX_PTS)
+                        negpts[parola] = max(negpts[parola] - CORREZZIONE_TRAINING, MIN_PTS)
                     elif risultato > obiettivo:
                         # Tuning al ribasso
-                        pospts[parola] = max(pospts[parola] - 0.1, MIN_PTS)
-                        negpts[parola] = min(negpts[parola] + 0.1, MAX_PTS)
+                        pospts[parola] = max(pospts[parola] - CORREZZIONE_TRAINING, MIN_PTS)
+                        negpts[parola] = min(negpts[parola] + CORREZZIONE_TRAINING, MAX_PTS)
 
         tentativi += 1
 
@@ -118,19 +133,22 @@ for i, row in df.iterrows():
 print(nuoveparole)'''
 
 # Calcolo dell'accuratezza
-print("Training")
+print("TRAINING")
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
 
 # test sul restante 10%
 tot = 0
+sbagliate_neutrali = 0
+sbagliate_positive = 0
+sbagliate_negative = 0
 righe = df_remaining_10.shape[0]
 for i,row in df_remaining_10.iterrows():
     tweet = row[1]
     pos_score = 0
     neg_score = 0
     nextisnegazione = False
-    escl = 2 if '!' in tweet else 1
+    escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
 
     for parola in tweet.lower().split():
         if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
@@ -163,6 +181,17 @@ for i,row in df_remaining_10.iterrows():
     if score == row[-1]:
         tot += 1
 
-print("Testing")
+    if score != row[-1]:
+        #print(f"pos = {pos_score}, neg = {neg_score}, expected {row[-1]}")
+        if row[-1] == "neutral":
+            sbagliate_neutrali +=1
+        elif row[-1] == "positive":
+            sbagliate_positive +=1
+        else:
+            sbagliate_negative +=1
+
+print(f"neutrali = {(sbagliate_neutrali / (righe-tot)) * 100}%, positive = {(sbagliate_positive / (righe-tot)) * 100}%, negative = {(sbagliate_negative / (righe-tot)) * 100}%")
+
+print("TESTING")
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
