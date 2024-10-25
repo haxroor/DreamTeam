@@ -2,21 +2,20 @@ import pandas as pd
 import csv
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-from pywin32_testutil import testmain
 
 # DEFINIZIONE DI TUTTE LE VARIABILI DA AGGIUSTARE
 MIN_PTS = 0.0
-MAX_PTS = 20
+MAX_PTS = 20.0
 ATTEMPTS = 3
-CORREZZIONE_TRAINING = 0.5
+CORREZZIONE_TRAINING = 0.2
 NEUTRAL_THRESHOLD = 9
-POSPTS_E_NEGPTS_INIZIALE = 5.0
-POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 5
-NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 1
-POSPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 1
-NEGPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 5
-POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 3
-NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 3
+POSPTS_E_NEGPTS_INIZIALE = 5
+POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 2.5
+NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 0.0
+POSPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 0.0
+NEGPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 2.5
+POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 2.5
+NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 2.5
 MOLTIPLICATORE_ESCLAMAZIONI = 2
 
 # Caricamento parole positive e negative
@@ -60,7 +59,7 @@ for i, row in df.iterrows():
         escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
 
         for parola in tweet:
-            parola = parola.lower().split()[0]
+            parola = parola.lower()
             if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
                 # parole inutili
                 continue
@@ -120,6 +119,7 @@ for i, row in df.iterrows():
             break
         else:
             for parola in tweet:
+                parola = parola.lower()
                 if parola not in stopwords and parola not in negazioni and parola[0] != '@' and parola[0] != '#' and parola[:4] != 'http':
                     if risultato < obiettivo:
                         # Tuning al rialzo
@@ -136,18 +136,21 @@ for i, row in df.iterrows():
 print(nuoveparole)'''
 
 # Calcolo dell'accuratezza
-#print("TRAINING")
+print("TRAINING:")
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
+print()
 
-#-----------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+
+# consegna dopo training
+
 filename_w = 'consegna.csv'
 with open(filename_w, mode='w', newline='') as file:
     writer = csv.writer(file)
-    #writer.writerow(["ID","LABEL"])
+    writer.writerow(["ID","LABEL"])
 
-    filename_r = 'test.csv'
-    df_test = pd.read_csv(filename_r)
+    df_test = pd.read_csv("test.csv")
     for i, row in df_test.iterrows():
         tweet = row[1].lower().split()
         pos_score = 0
@@ -155,9 +158,13 @@ with open(filename_w, mode='w', newline='') as file:
         nextisnegazione = False
         escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
         for parola in tweet:
-            parola = parola.lower().split()[0]
+            parola = parola.lower()
             # controllo parole inutili
             if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
+                continue
+
+            if parola in negazioni:
+                nextisnegazione = True
                 continue
 
             #controllo parole sconosciute
@@ -172,20 +179,21 @@ with open(filename_w, mode='w', newline='') as file:
                 if tweet.index(parola) < len(tweet) - 2:
                     lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 1])
                     lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 2])
-                for parola_sconosciuta in lista_parole_adiacenti_alla_sconosciuta:
-                    if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
-                        temp_pos_score += pospts[parola_sconosciuta]
-                        temp_neg_score += negpts[parola_sconosciuta]
+                for parola_adiacente in lista_parole_adiacenti_alla_sconosciuta:
+                    if parola_adiacente not in stopwords and parola_adiacente[0] != '@' and parola_adiacente[
+                        0] != '#' and parola_adiacente[:4] != 'http':
+                        if parola_adiacente in pospts.keys() and parola in negpts.keys():
+                            temp_pos_score += pospts[parola_adiacente]
+                            temp_neg_score += negpts[parola_adiacente]
+                        else:
+                            temp_pos_score += 0
+                            temp_neg_score += 0
                 pospts[parola] = temp_pos_score / 2
                 negpts[parola] = temp_neg_score / 2
 
                 pos_score += pospts[parola] * escl
                 neg_score += negpts[parola] * escl
 
-                continue
-
-            if parola in negazioni:
-                nextisnegazione = True
                 continue
 
             if nextisnegazione:
@@ -206,5 +214,5 @@ with open(filename_w, mode='w', newline='') as file:
 
         writer.writerow([str(row[0]), score])
 
-print(pospts['amore'])
-print(negpts['amore'])
+print("TESTING FATTO")
+print()
