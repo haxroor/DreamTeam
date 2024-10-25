@@ -137,7 +137,7 @@ print(nuoveparole)'''
 # Calcolo dell'accuratezza
 #print("TRAINING")
 accuracy = (tot / righe) * 100
-("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
+#print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
 
 #-----------------------------------------------------------------------------------------------------------------------
 filename_w = 'consegna.csv'
