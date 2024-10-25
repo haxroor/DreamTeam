@@ -21,7 +21,7 @@ MIN_PTS = 0.0  # 0,15 68%
 MAX_PTS = 15.0  # 0.1,15 61%
 
 # Definire una soglia per considerare sentiment neutro
-NEUTRAL_THRESHOLD = 10
+NEUTRAL_THRESHOLD = 3.0
 
 # creazione sample
 df = df_full.sample(frac=0.9, random_state=42)
@@ -119,7 +119,6 @@ print(nuoveparole)'''
 
 # Calcolo dell'accuratezza
 print("Training")
-print("Tot = ", tot)
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
 
@@ -165,6 +164,5 @@ for i,row in df_remaining_10.iterrows():
         tot += 1
 
 print("Testing")
-print("Tot = ", tot)
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
