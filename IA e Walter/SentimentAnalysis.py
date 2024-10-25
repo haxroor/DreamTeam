@@ -126,14 +126,10 @@ for i, row in df.iterrows():
 
         tentativi += 1
 
-nuoveparole = dict(sorted(nuoveparole.items(), key=lambda item: item[1], reverse=True))
-print(nuoveparole)
+#nuoveparole = dict(sorted(nuoveparole.items(), key=lambda item: item[1], reverse=True))
+#print(nuoveparole)
 
 # Calcolo dell'accuratezza
 print("Tot = ", tot)
 accuracy = (tot / righe) * 100
 print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
-
-df1 = pd.read_excel("Cartel1.xlsx")
-for i, row in df.iterrows():
-    tweet = row[1]
