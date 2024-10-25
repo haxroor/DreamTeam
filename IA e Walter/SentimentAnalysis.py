@@ -30,7 +30,6 @@ POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 0.4
 NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 0.4
 MOLTIPLICATORE_ESCLAMAZIONI = 2
 
-
 # creazione sample
 df = df_full.sample(frac=0.9, random_state=42)
 df_remaining_10 = df_full.loc[~df_full.index.isin(df.index)]
