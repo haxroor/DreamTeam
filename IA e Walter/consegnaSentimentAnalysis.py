@@ -27,7 +27,7 @@ with open('neg_words.txt', 'r') as file2:
 pospts = {word: (POSPTS_E_NEGPTS_INIZIALE if word in poswords else 0.0) for word in poswords + negwords}
 negpts = {word: (POSPTS_E_NEGPTS_INIZIALE if word in negwords else 0.0) for word in poswords + negwords}
 
-df = pd.read_excel("Cartel1.xlsx")
+df = pd.read_excel("trainnn.xlsx")
 
 # Stopwords e negazioni
 stopwords = {"un", "uno", "una", "il", "lo", "la", "i", "gli", "le", "e", "ma", "o", "di", "a", "da", "in", "con", "su",
