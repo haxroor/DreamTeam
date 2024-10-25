@@ -44,7 +44,7 @@ righe = df.shape[0]
 
 for i, row in df.iterrows():
     fatto = False
-    tweet = row[1]
+    tweet = row[1].lower().split()
     tentativi = 0
 
     while not fatto:
@@ -59,7 +59,8 @@ for i, row in df.iterrows():
         nextisnegazione = False
         escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
 
-        for parola in tweet.lower().split():
+        for parola in tweet:
+            parola = parola.lower().split()[0]
             if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
                 # parole inutili
                 continue
@@ -118,7 +119,7 @@ for i, row in df.iterrows():
             tot += 1
             break
         else:
-            for parola in tweet.lower().split():
+            for parola in tweet:
                 if parola not in stopwords and parola not in negazioni and parola[0] != '@' and parola[0] != '#' and parola[:4] != 'http':
                     if risultato < obiettivo:
                         # Tuning al rialzo
@@ -137,7 +138,7 @@ print(nuoveparole)'''
 # Calcolo dell'accuratezza
 #print("TRAINING")
 accuracy = (tot / righe) * 100
-#print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
+print("Accuracy = {:.2f}%".format(accuracy), "su ", righe)
 
 #-----------------------------------------------------------------------------------------------------------------------
 filename_w = 'consegna.csv'
@@ -148,12 +149,13 @@ with open(filename_w, mode='w', newline='') as file:
     filename_r = 'test.csv'
     df_test = pd.read_csv(filename_r)
     for i, row in df_test.iterrows():
-        tweet = row[1]
+        tweet = row[1].lower().split()
         pos_score = 0
         neg_score = 0
         nextisnegazione = False
         escl = MOLTIPLICATORE_ESCLAMAZIONI if '!' in tweet else 1
-        for parola in tweet.lower().split():
+        for parola in tweet:
+            parola = parola.lower().split()[0]
             # controllo parole inutili
             if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
                 continue
@@ -164,12 +166,12 @@ with open(filename_w, mode='w', newline='') as file:
                 temp_pos_score = 0
                 temp_neg_score = 0
                 # append adjacent words
-                if tweet.lower().split().index(parola) > 2:
-                    lista_parole_adiacenti_alla_sconosciuta.append(tweet.lower().split()[tweet.lower().split().index(parola) - 1])
-                    lista_parole_adiacenti_alla_sconosciuta.append(tweet.lower().split()[tweet.lower().split().index(parola) - 2])
-                if tweet.lower().split().index(parola) < len(tweet.lower().split()) - 2:
-                    lista_parole_adiacenti_alla_sconosciuta.append(tweet.lower().split()[tweet.lower().split().index(parola) + 1])
-                    lista_parole_adiacenti_alla_sconosciuta.append(tweet.lower().split()[tweet.lower().split().index(parola) + 2])
+                if tweet.index(parola) > 2:
+                    lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) - 1])
+                    lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) - 2])
+                if tweet.index(parola) < len(tweet) - 2:
+                    lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 1])
+                    lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 2])
                 for parola_sconosciuta in lista_parole_adiacenti_alla_sconosciuta:
                     if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
                         temp_pos_score += pospts[parola_sconosciuta]
