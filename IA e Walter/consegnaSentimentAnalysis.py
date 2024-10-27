@@ -5,17 +5,17 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # DEFINIZIONE DI TUTTE LE VARIABILI DA AGGIUSTARE
 MIN_PTS = 0.0
-MAX_PTS = 20.0
-ATTEMPTS = 3
+MAX_PTS = 10.0
+ATTEMPTS = 5
 CORREZZIONE_TRAINING = 0.2
 NEUTRAL_THRESHOLD = 9
-POSPTS_E_NEGPTS_INIZIALE = 5
+POSPTS_E_NEGPTS_INIZIALE = 2.5
 POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 2.5
 NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 0.0
 POSPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 0.0
 NEGPTS_NUOVA_PAROLA_SE_TWEET_NEGATIVO = 2.5
-POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 2.5
-NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 2.5
+POSPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 1
+NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO = 1
 MOLTIPLICATORE_ESCLAMAZIONI = 2
 
 # Caricamento parole positive e negative
@@ -60,7 +60,7 @@ for i, row in df.iterrows():
 
         for parola in tweet:
             parola = parola.lower()
-            if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
+            if parola in stopwords or parola[0] in '@#' or parola.startswith("http"):
                 # parole inutili
                 continue
             if parola in negazioni:
@@ -68,7 +68,7 @@ for i, row in df.iterrows():
                 continue
 
             # Se la parola è nuova, aggiungila
-            if parola not in pospts.keys() and parola not in negpts.keys():
+            if parola not in pospts and parola not in negpts:
                 if row[-1] == "positive":
                     pospts[parola] = POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO
                     negpts[parola] = NEGPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO
@@ -80,13 +80,9 @@ for i, row in df.iterrows():
                     negpts[parola] = NEGPTS_NUOVA_PAROLA_SE_TWEET_NEUTRO
 
             # Gestione del punteggio per le parole già note
-            if nextisnegazione:
-                neg_score += pospts[parola] * escl
-                pos_score += negpts[parola] * escl
-                nextisnegazione = False
-            else:
-                pos_score += pospts[parola] * escl
-                neg_score += negpts[parola] * escl
+            pos_score += pospts[parola] * escl if not nextisnegazione else negpts[parola] * escl
+            neg_score += negpts[parola] * escl if not nextisnegazione else pospts[parola] * escl
+            nextisnegazione = False
 
         # Controllo del sentiment ottenuto
         #print(f"{pos_score - neg_score} e {row[-1]}")
@@ -120,7 +116,7 @@ for i, row in df.iterrows():
         else:
             for parola in tweet:
                 parola = parola.lower()
-                if parola not in stopwords and parola not in negazioni and parola[0] != '@' and parola[0] != '#' and parola[:4] != 'http':
+                if parola not in stopwords and parola not in negazioni and parola[0] not in '@#' and not parola.startswith("http"):
                     if risultato < obiettivo:
                         # Tuning al rialzo
                         pospts[parola] = min(pospts[parola] + CORREZZIONE_TRAINING, MAX_PTS)
@@ -144,6 +140,7 @@ print()
 #----------------------------------------------------------------------------------------------------------------------
 
 # consegna dopo training
+lista_risultati_nml = []
 
 filename_w = 'consegna.csv'
 with open(filename_w, mode='w', newline='') as file:
@@ -160,7 +157,7 @@ with open(filename_w, mode='w', newline='') as file:
         for parola in tweet:
             parola = parola.lower()
             # controllo parole inutili
-            if parola in stopwords or parola[0] == '@' or parola[0] == '#' or parola[:4] == 'http':
+            if parola in stopwords or parola[0] in '@#' or parola.startswith("http"):
                 continue
 
             if parola in negazioni:
@@ -168,7 +165,8 @@ with open(filename_w, mode='w', newline='') as file:
                 continue
 
             #controllo parole sconosciute
-            if parola not in pospts.keys() and parola not in negpts.keys():
+            #questa parte di codice aumenta il tempo di esecuzione da 0.5s a 11s
+            if parola not in pospts and parola not in negpts:
                 lista_parole_adiacenti_alla_sconosciuta = []
                 temp_pos_score = 0
                 temp_neg_score = 0
@@ -180,9 +178,8 @@ with open(filename_w, mode='w', newline='') as file:
                     lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 1])
                     lista_parole_adiacenti_alla_sconosciuta.append(tweet[tweet.index(parola) + 2])
                 for parola_adiacente in lista_parole_adiacenti_alla_sconosciuta:
-                    if parola_adiacente not in stopwords and parola_adiacente[0] != '@' and parola_adiacente[
-                        0] != '#' and parola_adiacente[:4] != 'http':
-                        if parola_adiacente in pospts.keys() and parola in negpts.keys():
+                    if parola_adiacente not in stopwords and parola_adiacente[0] not in '@#' and not parola.startswith("http"):
+                        if parola_adiacente in pospts and parola in negpts:
                             temp_pos_score += pospts[parola_adiacente]
                             temp_neg_score += negpts[parola_adiacente]
                         else:
@@ -196,13 +193,9 @@ with open(filename_w, mode='w', newline='') as file:
 
                 continue
 
-            if nextisnegazione:
-                neg_score += pospts[parola] * escl
-                pos_score += negpts[parola] * escl
-                nextisnegazione = False
-            else:
-                pos_score += pospts[parola] * escl
-                neg_score += negpts[parola] * escl
+            pos_score += pospts[parola] * escl if not nextisnegazione else negpts[parola] * escl
+            neg_score += negpts[parola] * escl if not nextisnegazione else pospts[parola] * escl
+            nextisnegazione = False
 
         # Controllo del sentiment ottenuto
         if abs(pos_score - neg_score) <= NEUTRAL_THRESHOLD:
@@ -213,6 +206,7 @@ with open(filename_w, mode='w', newline='') as file:
             score = "negative"
 
         writer.writerow([str(row[0]), score])
+
 
 print("TESTING FATTO")
 print()
