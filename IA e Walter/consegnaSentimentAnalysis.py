@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 MIN_PTS = 0.0
 MAX_PTS = 10.0
 ATTEMPTS = 5
-CORREZZIONE_TRAINING = 0.2
+CORREZIONE_TRAINING = 0.2
 NEUTRAL_THRESHOLD = 9
 POSPTS_E_NEGPTS_INIZIALE = 2.5
 POSPTS_NUOVA_PAROLA_SE_TWEET_POSITIVO = 2.5
@@ -119,12 +119,12 @@ for i, row in df.iterrows():
                 if parola not in stopwords and parola not in negazioni and parola[0] not in '@#' and not parola.startswith("http"):
                     if risultato < obiettivo:
                         # Tuning al rialzo
-                        pospts[parola] = min(pospts[parola] + CORREZZIONE_TRAINING, MAX_PTS)
-                        negpts[parola] = max(negpts[parola] - CORREZZIONE_TRAINING, MIN_PTS)
+                        pospts[parola] = min(pospts[parola] + CORREZIONE_TRAINING, MAX_PTS)
+                        negpts[parola] = max(negpts[parola] - CORREZIONE_TRAINING, MIN_PTS)
                     elif risultato > obiettivo:
                         # Tuning al ribasso
-                        pospts[parola] = max(pospts[parola] - CORREZZIONE_TRAINING, MIN_PTS)
-                        negpts[parola] = min(negpts[parola] + CORREZZIONE_TRAINING, MAX_PTS)
+                        pospts[parola] = max(pospts[parola] - CORREZIONE_TRAINING, MIN_PTS)
+                        negpts[parola] = min(negpts[parola] + CORREZIONE_TRAINING, MAX_PTS)
 
         tentativi += 1
 
